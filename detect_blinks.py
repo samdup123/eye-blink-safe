@@ -85,6 +85,10 @@ while True:
 	# detect faces in the grayscale frame
 	rects = detector(gray, 0)
 
+	if len(rects) > 1:
+		cv2.putText(frame, "Only one person can be on screen!".format(TOTAL), (10, 150),
+			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
 	# loop over the face detections
 	for rect in rects:
 		# determine the facial landmarks for the face region, then
