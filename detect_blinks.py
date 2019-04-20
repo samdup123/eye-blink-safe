@@ -49,8 +49,11 @@ args = vars(ap.parse_args())
 # define two constants, one for the eye aspect ratio to indicate
 # blink and then a second constant for the number of consecutive
 # frames the eye must be below the threshold
-EYE_AR_THRESH = 0.3
+EYE_AR_UPPER_THRESH = 0.39
+EYE_AR_LOWER_THRESH = 0.23
 EYE_AR_CONSEC_FRAMES = 3
+
+GOT_BIG_EYED = False
 
 # initialize the frame counters and the total number of blinks
 COUNTER = 0
@@ -120,23 +123,24 @@ try:
 			cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
 			cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
 
-			# check to see if the eye aspect ratio is below the blink
-			# threshold, and if so, increment the blink frame counter
-			if ear < EYE_AR_THRESH:
+			if (ear > EYE_AR_UPPER_THRESH) and (not GOT_BIG_EYED):
 				COUNTER += 1
 
-			# otherwise, the eye aspect ratio is not below the blink
-			# threshold
-			else:
-				# if the eyes were closed for a sufficient number of
-				# then increment the total number of blinks
-				if COUNTER >= EYE_AR_CONSEC_FRAMES:
-					TOTAL += 1
-					cv2.putText(frame, "Blah".format(TOTAL), (180, 500),
-						cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+			elif (not GOT_BIG_EYED) and (COUNTER >= EYE_AR_CONSEC_FRAMES):
+				GOT_BIG_EYED = True
+				cv2.putText(frame, "Step 1".format(TOTAL), (180, 500),
+					cv2.FONT_HERSHEY_SIMPLEX, 1.4, (0, 0, 255), 2)
 
-				# reset the eye frame counter
+			elif (ear < EYE_AR_LOWER_THRESH) and (GOT_BIG_EYED):
+				COUNTER += 1
+
+			elif (ear >= EYE_AR_LOWER_THRESH) and (GOT_BIG_EYED) and (COUNTER >= (2*EYE_AR_CONSEC_FRAMES)):
+				TOTAL += 1
 				COUNTER = 0
+				GOT_BIG_EYED = False
+				cv2.putText(frame, "Step 2".format(TOTAL), (180, 500),
+					cv2.FONT_HERSHEY_SIMPLEX, 1.6, (0, 0, 255), 2)
+
 
 			# draw the total number of blinks on the frame along with
 			# the computed eye aspect ratio for the frame
