@@ -49,14 +49,15 @@ args = vars(ap.parse_args())
 # define two constants, one for the eye aspect ratio to indicate
 # blink and then a second constant for the number of consecutive
 # frames the eye must be below the threshold
-EYE_AR_UPPER_THRESH = 0.39
-EYE_AR_LOWER_THRESH = 0.23
-EYE_AR_CONSEC_FRAMES = 3
+EYE_AR_UPPER_THRESH = 0.37
+EYE_AR_LOWER_THRESH = 0.26
+EYE_AR_CONSEC_FRAMES = 2
 
-GOT_BIG_EYED = False
+STARTED_SEQUENCE = False
 
 # initialize the frame counters and the total number of blinks
 COUNTER = 0
+SECONDARY_COUNTER = 0
 TOTAL = 0
 
 # initialize dlib's face detector (HOG-based) and then create
@@ -123,23 +124,44 @@ try:
 			cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
 			cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
 
-			if (ear > EYE_AR_UPPER_THRESH) and (not GOT_BIG_EYED):
+			if (not STARTED_SEQUENCE):
+				print('not started ' + str(COUNTER) + ' ear: ' + str(ear))
+				if (COUNTER >= EYE_AR_CONSEC_FRAMES) and (ear <= EYE_AR_UPPER_THRESH):
+					STARTED_SEQUENCE = True
+					COUNTER = 0
+					print('Started!')
+					cv2.putText(frame, "Step 1", (180, 500),
+						cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 2)
+				else:
+					if (ear > EYE_AR_UPPER_THRESH):
+						COUNTER += 1
+						print('up')
+					else:
+						COUNTER = 0
+						print('fail')
+			else:
 				COUNTER += 1
+				print('counter ' + str(COUNTER) + ' ear: ' + str(ear))
+				if (COUNTER > (3*EYE_AR_CONSEC_FRAMES)):
+					print('TIMEOUt')
+					COUNTER = 0
+					SECONDARY_COUNTER = 0
+					STARTED_SEQUENCE = False
+					cv2.putText(frame, "TIMEOUT", (180, 500),
+						cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 2)
 
-			elif (not GOT_BIG_EYED) and (COUNTER >= EYE_AR_CONSEC_FRAMES):
-				GOT_BIG_EYED = True
-				cv2.putText(frame, "Step 1".format(TOTAL), (180, 500),
-					cv2.FONT_HERSHEY_SIMPLEX, 1.4, (0, 0, 255), 2)
+				if (ear < EYE_AR_LOWER_THRESH):
+					print('low')
+					SECONDARY_COUNTER += 1
 
-			elif (ear < EYE_AR_LOWER_THRESH) and (GOT_BIG_EYED):
-				COUNTER += 1
-
-			elif (ear >= EYE_AR_LOWER_THRESH) and (GOT_BIG_EYED) and (COUNTER >= (2*EYE_AR_CONSEC_FRAMES)):
-				TOTAL += 1
-				COUNTER = 0
-				GOT_BIG_EYED = False
-				cv2.putText(frame, "Step 2".format(TOTAL), (180, 500),
-					cv2.FONT_HERSHEY_SIMPLEX, 1.6, (0, 0, 255), 2)
+				if (SECONDARY_COUNTER >= EYE_AR_CONSEC_FRAMES):
+					print('SUCCESS')
+					TOTAL += 1
+					COUNTER = 0
+					SECONDARY_COUNTER = 0
+					STARTED_SEQUENCE = False
+					cv2.putText(frame, "Step 2", (180, 500),
+						cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 2)
 
 
 			# draw the total number of blinks on the frame along with
