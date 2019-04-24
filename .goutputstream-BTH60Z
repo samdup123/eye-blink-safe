@@ -75,11 +75,11 @@ print("[INFO] starting video stream thread...")
 # vs = FileVideoStream(args["video"]).start()
 # fileStream = True
 fileStream = False
-vs = VideoStream(usePiCamera=True).start()
+vs = VideoStream(src=0).start()
+# vs = VideoStream(usePiCamera=True).start()
 time.sleep(1.0)
 
-
-print("[INFO] started video stream")
+print("[INFO] started video stream thread...")
 
 try:
 
