@@ -14,8 +14,6 @@ import dlib
 import cv2
 import RPi.GPIO as gpio
 from servo import *
-#from datetime import datetime, timedelta
-#import heapq
 
 
 cap = cv2.VideoCapture(0)
@@ -27,7 +25,7 @@ servo = initServo()
 
 
 # Define the codec and filename.
-#out = cv2.VideoWriter('output.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
+out = cv2.VideoWriter('output.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
 
 def eye_aspect_ratio(eye):
 	# compute the euclidean distances between the two sets of
@@ -192,7 +190,7 @@ try:
 		cv2.imshow("Frame", frame)
 		key = cv2.waitKey(1) & 0xFF
 
-		#out.write(frame)
+		out.write(frame)
 
 		# if the `q` key was pressed, break from the loop
 		if key == ord("q"):
@@ -203,6 +201,6 @@ except KeyboardInterrupt:
 	print('yeet')
 	cv2.destroyAllWindows()
 	cap.release()
-	#out.release()
+	out.release()
 	vs.stop()
 	disposeServo(servo)
