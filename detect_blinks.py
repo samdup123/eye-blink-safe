@@ -12,11 +12,19 @@ import imutils
 import time
 import dlib
 import cv2
+import RPi.GPIO as gpio
+from servo import *
+#from datetime import datetime, timedelta
+#import heapq
+
 
 cap = cv2.VideoCapture(0)
 # Get the Default resolutions
 frame_width = int(cap.get(3))
 frame_height = int(cap.get(4))
+
+servo = initServo()
+
 
 # Define the codec and filename.
 #out = cv2.VideoWriter('output.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
@@ -48,8 +56,8 @@ args = vars(ap.parse_args())
 # define two constants, one for the eye aspect ratio to indicate
 # blink and then a second constant for the number of consecutive
 # frames the eye must be below the threshold
-EYE_AR_UPPER_THRESH = 0.37
-EYE_AR_LOWER_THRESH = 0.26
+EYE_AR_UPPER_THRESH = 0.39
+EYE_AR_LOWER_THRESH = 0.22
 EYE_AR_CONSEC_FRAMES = 2
 
 STARTED_SEQUENCE = False
@@ -78,7 +86,6 @@ fileStream = False
 vs = VideoStream(usePiCamera=True).start()
 time.sleep(1.0)
 
-
 print("[INFO] started video stream")
 
 try:
@@ -101,6 +108,11 @@ try:
 		rects = detector(gray, 0)
 
 		# loop over the face detections
+		if len(rects) == 0:
+			COUNTER = 0
+			SECONDARY_COUNTER = 0
+			STARTED_SEQUENCE = False
+		
 		for rect in rects:
 			# determine the facial landmarks for the face region, then
 			# convert the facial landmark (x, y)-coordinates to a NumPy
@@ -158,11 +170,15 @@ try:
 				if (SECONDARY_COUNTER >= EYE_AR_CONSEC_FRAMES):
 					print('SUCCESS')
 					TOTAL += 1
+					
+					rotate90(servo, -1)
+					
 					COUNTER = 0
 					SECONDARY_COUNTER = 0
 					STARTED_SEQUENCE = False
 					cv2.putText(frame, "Step 2", (180, 500),
 						cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 2)
+					
 
 
 			# draw the total number of blinks on the frame along with
@@ -189,3 +205,4 @@ except KeyboardInterrupt:
 	cap.release()
 	#out.release()
 	vs.stop()
+	disposeServo(servo)
