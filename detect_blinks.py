@@ -14,8 +14,43 @@ import dlib
 import cv2
 import RPi.GPIO as gpio
 from servo import *
-#from datetime import datetime, timedelta
-#import heapq
+from datetime import datetime, timedelta
+import heapq
+
+# just holds a function, its arguments, and when we want it to execute.
+class TimeoutFunction:
+    def __init__(self, function, timeout, *args):
+        self.function = function
+        self.args = args
+        self.startTime = datetime.now() + timedelta(0,0,0,timeout) 
+
+    def execute(self):
+        self.function(*self.args)
+      
+# A "todo" list for all the TimeoutFunctions we want to execute in the future
+# They are sorted in the order they should be executed, thanks to heapq
+class TodoList: 
+    def __init__(self):
+        self.todo = []
+
+    def addToList(self, tFunction):
+        heapq.heappush(self.todo, (tFunction.startTime, tFunction))
+
+    def executeReadyFunctions(self):
+        if len(self.todo) > 0:
+            tFunction = heapq.heappop(self.todo)[1]
+            while tFunction and datetime.now() > tFunction.startTime:
+                #execute all the functions that are ready
+                tFunction.execute()
+                if len(self.todo) > 0:
+                    tFunction = heapq.heappop(self.todo)[1]
+                else:
+                    tFunction = None                    
+            if tFunction:
+                #this one's not ready yet, push it back on
+                heapq.heappush(self.todo, (tFunction.startTime, tFunction))
+                
+todoList = TodoList()
 
 
 cap = cv2.VideoCapture(0)
@@ -66,6 +101,54 @@ STARTED_SEQUENCE = False
 COUNTER = 0
 SECONDARY_COUNTER = 0
 TOTAL = 0
+TOP_LEVEL_PATTERN_IN_PROGRESS = False
+
+def RegisterBlink():
+	global TOTAL
+	TOTAL += 1
+	
+def if7BlinksThenOpenSafe():
+	global TOTAL
+	global TOP_LEVEL_PATTERN_IN_PROGRESS
+	if TOTAL == 7:
+		print("4 BLINKS A SUCCESS!!!!!!!!!!!!!!!!!!!\n")
+		rotate90(servo, -1)
+	else:
+		print("FIRST 3 BLINKS FAILURE!!!!!!!!!!!!!!!!!!!\n")
+	TOTAL = 0
+	TOP_LEVEL_PATTERN_IN_PROGRESS = False
+	
+c = TimeoutFunction(if7BlinksThenOpenSafe, 4000)
+	
+def If3BlinksWaitFor4More():
+	global TOTAL
+	global todoList
+	global TOP_LEVEL_PATTERN_IN_PROGRESS
+	if TOTAL == 3:
+		todoList.addToList(c)
+		print("0 SECTION A SUCCESS!!!!!!!!!!!!!!!!!!!\n")
+	else:
+		TOTAL = 0
+		TOP_LEVEL_PATTERN_IN_PROGRESS = False
+		print("0 SECTION A FAILURE!!!!!!!!!!!!!!!!!!!\n")
+	
+	
+b = TimeoutFunction(If3BlinksWaitFor4More, 4000)
+	
+def If3BlinksStartTimeout():
+	global TOTAL
+	global todoList
+	global TOP_LEVEL_PATTERN_IN_PROGRESS
+	if TOTAL == 3:
+		todoList.addToList(b)
+		print("FIRST 3 BLINKS A SUCCESS!!!!!!!!!!!!!!!!!!!\n")
+	else:
+		TOTAL = 0
+		TOP_LEVEL_PATTERN_IN_PROGRESS = False
+		print("FIRST 3 BLINKS A FAILURE!!!!!!!!!!!!!!!!!!!\n")
+		
+a = TimeoutFunction(If3BlinksStartTimeout, 3300)
+			
 
 # initialize dlib's face detector (HOG-based) and then create
 # the facial landmark predictor
@@ -138,9 +221,10 @@ try:
 			cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
 
 			if (not STARTED_SEQUENCE):
-				print('not started ' + str(COUNTER) + ' ear: ' + str(ear))
 				if (COUNTER >= EYE_AR_CONSEC_FRAMES) and (ear <= EYE_AR_UPPER_THRESH):
 					STARTED_SEQUENCE = True
+					TOP_LEVEL_PATTERN_IN_PROGRESS = True
+					todoList.addToList(a)
 					COUNTER = 0
 					print('Started!')
 					cv2.putText(frame, "Step 1", (180, 500),
@@ -151,7 +235,6 @@ try:
 						print('up')
 					else:
 						COUNTER = 0
-						print('fail')
 			else:
 				COUNTER += 1
 				print('counter ' + str(COUNTER) + ' ear: ' + str(ear))
@@ -164,14 +247,13 @@ try:
 						cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 2)
 
 				if (ear < EYE_AR_LOWER_THRESH):
-					print('low')
 					SECONDARY_COUNTER += 1
 
 				if (SECONDARY_COUNTER >= EYE_AR_CONSEC_FRAMES):
 					print('SUCCESS')
 					TOTAL += 1
 					
-					rotate90(servo, -1)
+					RegisterBlink()
 					
 					COUNTER = 0
 					SECONDARY_COUNTER = 0
