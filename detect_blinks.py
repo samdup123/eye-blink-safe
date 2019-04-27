@@ -141,8 +141,8 @@ try:
 					STARTED_SEQUENCE = True
 					COUNTER = 0
 					print('Started!')
-					cv2.putText(frame, "Step 1", (180, 500),
-						cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 2)
+					#cv2.putText(frame, "Step 1", (180, 500),
+						#cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 2)
 				else:
 					if (ear > EYE_AR_UPPER_THRESH):
 						COUNTER += 1
@@ -174,17 +174,17 @@ try:
 					COUNTER = 0
 					SECONDARY_COUNTER = 0
 					STARTED_SEQUENCE = False
-					cv2.putText(frame, "Step 2", (180, 500),
+					cv2.putText(frame, "BLINK!", (180, 500),
 						cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 2)
 					
 
 
 			# draw the total number of blinks on the frame along with
 			# the computed eye aspect ratio for the frame
-			cv2.putText(frame, "Blinks: {}".format(TOTAL), (10, 30),
-				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-			cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
-				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+			#cv2.putText(frame, "Blinks: {}".format(TOTAL), (10, 30),
+			#	cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+			#cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
+			#	cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
 		# show the frame
 		cv2.imshow("Frame", frame)
