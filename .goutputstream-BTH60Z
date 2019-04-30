@@ -12,20 +12,14 @@ import imutils
 import time
 import dlib
 import cv2
-import RPi.GPIO as gpio
-from servo import *
-
 
 cap = cv2.VideoCapture(0)
 # Get the Default resolutions
 frame_width = int(cap.get(3))
 frame_height = int(cap.get(4))
 
-servo = initServo()
-
-
 # Define the codec and filename.
-out = cv2.VideoWriter('output.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
+#out = cv2.VideoWriter('output.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
 
 def eye_aspect_ratio(eye):
 	# compute the euclidean distances between the two sets of
@@ -54,8 +48,8 @@ args = vars(ap.parse_args())
 # define two constants, one for the eye aspect ratio to indicate
 # blink and then a second constant for the number of consecutive
 # frames the eye must be below the threshold
-EYE_AR_UPPER_THRESH = 0.39
-EYE_AR_LOWER_THRESH = 0.22
+EYE_AR_UPPER_THRESH = 0.37
+EYE_AR_LOWER_THRESH = 0.26
 EYE_AR_CONSEC_FRAMES = 2
 
 STARTED_SEQUENCE = False
@@ -81,10 +75,11 @@ print("[INFO] starting video stream thread...")
 # vs = FileVideoStream(args["video"]).start()
 # fileStream = True
 fileStream = False
-vs = VideoStream(usePiCamera=True).start()
+vs = VideoStream(src=0).start()
+# vs = VideoStream(usePiCamera=True).start()
 time.sleep(1.0)
 
-print("[INFO] started video stream")
+print("[INFO] started video stream thread...")
 
 try:
 
@@ -106,11 +101,6 @@ try:
 		rects = detector(gray, 0)
 
 		# loop over the face detections
-		if len(rects) == 0:
-			COUNTER = 0
-			SECONDARY_COUNTER = 0
-			STARTED_SEQUENCE = False
-		
 		for rect in rects:
 			# determine the facial landmarks for the face region, then
 			# convert the facial landmark (x, y)-coordinates to a NumPy
@@ -141,8 +131,8 @@ try:
 					STARTED_SEQUENCE = True
 					COUNTER = 0
 					print('Started!')
-					#cv2.putText(frame, "Step 1", (180, 500),
-						#cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 2)
+					cv2.putText(frame, "Step 1", (180, 500),
+						cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 2)
 				else:
 					if (ear > EYE_AR_UPPER_THRESH):
 						COUNTER += 1
@@ -168,29 +158,25 @@ try:
 				if (SECONDARY_COUNTER >= EYE_AR_CONSEC_FRAMES):
 					print('SUCCESS')
 					TOTAL += 1
-					
-					rotate90(servo, -1)
-					
 					COUNTER = 0
 					SECONDARY_COUNTER = 0
 					STARTED_SEQUENCE = False
-					cv2.putText(frame, "BLINK!", (180, 500),
+					cv2.putText(frame, "Step 2", (180, 500),
 						cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 2)
-					
 
 
 			# draw the total number of blinks on the frame along with
 			# the computed eye aspect ratio for the frame
-			#cv2.putText(frame, "Blinks: {}".format(TOTAL), (10, 30),
-			#	cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-			#cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
-			#	cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+			cv2.putText(frame, "Blinks: {}".format(TOTAL), (10, 30),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+			cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
 		# show the frame
 		cv2.imshow("Frame", frame)
 		key = cv2.waitKey(1) & 0xFF
 
-		out.write(frame)
+		#out.write(frame)
 
 		# if the `q` key was pressed, break from the loop
 		if key == ord("q"):
@@ -201,6 +187,5 @@ except KeyboardInterrupt:
 	print('yeet')
 	cv2.destroyAllWindows()
 	cap.release()
-	out.release()
+	#out.release()
 	vs.stop()
-	disposeServo(servo)
