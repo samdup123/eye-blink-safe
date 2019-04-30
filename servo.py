@@ -49,6 +49,3 @@ def rotate90(servo, direction):
 	setSpeed(servo, -direction)
 	time.sleep(0.13)
 	setSpeed(servo, 0)
-	
-
-
